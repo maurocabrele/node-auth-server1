@@ -1,12 +1,11 @@
-export const signUp = ({ client, user }: { client: any; user: any }) => {
+export const signUp =async ({ client, user }: { client: any; user: any }):Promise<boolean> => {
   try {
-    const usersDb = client.db("authentication");
+    const usersDb = client.db("appTest");
     const usersCollection = usersDb.collection("users");
-
-    const res = usersCollection.insertOne(user);
-
-    return res;
+    const res = await usersCollection.insertOne(user); 
+    return res.acknowledged;
   } catch (error) {
-    console.log(`ERROR connectMongoDb: ${error}`);
+    console.log(`ERROR SIGNUP: ${error}`);
+    return false;
   }
 };
