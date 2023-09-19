@@ -1,3 +1,4 @@
+import { logIn } from "./logIn";
 import { signUp } from "./signUp";
 
 const express = require("express");
@@ -9,57 +10,79 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const api: string = process.env.API_URL ?? "";
-const clusterUrl: string = process.env.CLUSTER_URL ?? "";
+const api = process.env.API_URL ?? "";
+const clusterUrl = process.env.CLUSTER_URL ?? "";
 const username = encodeURIComponent("super-admin");
 const password = encodeURIComponent("Coco12345|");
 const uri = `mongodb+srv://${username}:${password}@${clusterUrl}/?retryWrites=true&w=majority`;
 
+// Create roles
+const roles = [
+  {
+    role: "admin",
+    db: "appTest",
+    privileges: ["all"],
+  },
+  {
+    role: "user",
+    db: "appTest",
+    privileges: [
+      {
+        resource: { db: "appTest", collection: "users" },
+        actions: ["find", "update", "insert", "remove"],
+      },
+    ],
+  },
+];
+
 // Create a MongoClient
-const client = new MongoClient(uri);
+const client = new MongoClient(uri, {
+  // serverApi: {
+  //   version: ServerApiVersion.v1,
+  //   strict: true,
+  //   deprecationErrors: true,
+  // },
+});
 const connectMongoDb = async () => {
   try {
     // Connect the client to the server
-    client.connect();
-    // Send a ping to confirm a successful connection
-    client.db("admin").command({ ping: 1 });
+    await client.connect();
+
+    // Create test db
+    const testDb = client.db("appTest");
+    // Create collection users
+    const usersCollection = testDb.collection("users");
+    // const results: Document | null = await usersCollection
+    //   .find({ email: "test" })
+    //   .toArray();
+    // console.log(`RESULTS TESTDB: ${JSON.stringify(results)}`);
+
+     
+    console.log(`main => connectMongoDb CONNECTED `);
   } catch (error) {}
 };
+connectMongoDb();
 
-const main = () => {
-  try {
-    connectMongoDb();
-  } catch (error) {
-    console.log(`main => connectMongoDb: ${error}`);
-  } finally {
-    // await client.close();
-  }
-};
-//Run the main function
-main();
-app.post("/register", (req: any, res: any) => {
+app.post("/signup", async (req: any, res: any) => {
   const newUser = req.body;
   try {
-    const result = signUp({ client: client, user: newUser });
+    const result = await signUp({ client: client, user: newUser });
     res.send(result).status(204);
   } catch (error) {
     console.log(`AddUsser Error: ${error}`);
   }
 });
-app.get("/login", (req: any, res: any) => {
-  res.json({ message: "User logged" });
+app.post("/login", async (req: any, res: any) => {
+  const user = req.body;
+  console.log(`login body: ${req.body}`);
+  try {
+    const result = await logIn({ client: client, user: user });
+    res.send(result).status(204);
+  } catch (error) {
+    console.log(`AddUsser Error: ${error}`);
+  }
 });
-app.post("/user/generateToken", (req: any, res: any) => {
-  // Validate User Here
-  // Then generate JWT Token
-  let jwtSecretKey = process.env.JWT_SECRET_KEY;
-  let data = {
-    time: Date(),
-    userId: 1,
-  };
-  const token = jwt.sign(data, jwtSecretKey);
-  res.send({ message: token });
-});
+
 let PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
   console.log(`Server is up and running on ${PORT}`);

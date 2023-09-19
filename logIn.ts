@@ -6,22 +6,24 @@ export const logIn = async ({
   client: any;
   user: any;
 }): Promise<String> => {
+  let token = "";
+  
   try {
     const usersDb = client.db("appTest");
     const usersCollection = usersDb.collection("users");
     const res = await usersCollection.findOne(user);
-    console.log(`LOGIN: ${res}`);
-    // if (res.acknowledged) {
-    //   let jwtSecretKey = process.env.JWT_SECRET_KEY;
-    //   let data = {
-    //     time: Date(),
-    //     userId: 1,
-    //   };
-    //   const token = jwt.sign(data, jwtSecretKey);
-    // }
-    return "res";
+  
+    if (res._id) {
+      let jwtSecretKey = 'token';
+      let data = {
+        time: Date(),
+        userId: res._id,
+      };
+      token = jwt.sign(data, jwtSecretKey); 
+    }
+    return token;
   } catch (error) {
     console.log(`ERROR SIGNUP: ${error}`);
-    return "false";
+    return (token = JSON.stringify(error));
   }
 };
