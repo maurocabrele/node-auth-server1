@@ -7,19 +7,21 @@ export const logIn = async ({
   user: any;
 }): Promise<String> => {
   let token = "";
-  
+
   try {
     const usersDb = client.db("appTest");
     const usersCollection = usersDb.collection("users");
-    const res = await usersCollection.findOne(user);
-  
-    if (res._id) {
-      let jwtSecretKey = 'token';
-      let data = {
+    const _user = await usersCollection.findOne(user);
+
+    if (_user._id) {
+      const data = {
         time: Date(),
-        userId: res._id,
+        user: _user,
       };
-      token = jwt.sign(data, jwtSecretKey); 
+      token = jwt.sign({ data }, process.env.JWT_KEY, {
+        expiresIn: process.env.JWT_EXPIRACY,
+      });
+      console.log(`SUCCESS LOGIN: ${token}`);
     }
     return token;
   } catch (error) {

@@ -1,18 +1,36 @@
-module.exports. userSchema = {
+export const userSchema = {
   $jsonSchema: {
     bsonType: "object",
     title: "User Object Validation",
-    required: ["email", "password"],
+    required: ["email", "password", "firstName", "lastName", "dob"],
     properties: {
+      firstName: {
+        type: "string",
+      },
+      lastName: {
+        type: "string",
+      },
+      dob: {
+        type: "string",
+      },
       email: {
-        bsonType: "string",
-        description: "'email' must be a string and is required",
+        type: "string",
+        
       },
       password: {
-        bsonType: "string",
-        description: "'password' must be a string and is required",
+        type: "string",
+      },
+      jwt: {
+        type: "string",
+      },
+      refreshjwt: {
+        type: "string",
+      },
+      roles: {
+        type: ["string"],
+        enum: ["user", "admin", "super_admin"],
       },
     },
-    additionalProperties: false,
+    additionalProperties: true,
   },
 };

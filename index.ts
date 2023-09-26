@@ -1,9 +1,9 @@
 import { logIn } from "./logIn";
+import { userSchema } from "./roles/schemas/user/user_schema";
 import { signUp } from "./signUp";
 
 const express = require("express");
-const cors = require("cors");
-const jwt = require("jsonwebtoken");
+const cors = require("cors"); 
 const { MongoClient, ServerApiVersion } = require("mongodb");
 require("dotenv/config");
 const app = express();
@@ -51,13 +51,13 @@ const connectMongoDb = async () => {
     // Create test db
     const testDb = client.db("appTest");
     // Create collection users
-    const usersCollection = testDb.collection("users");
-    // const results: Document | null = await usersCollection
-    //   .find({ email: "test" })
-    //   .toArray();
-    // console.log(`RESULTS TESTDB: ${JSON.stringify(results)}`);
+    // if (testDb.collection("users")===undefined) {
+    //   console.log('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+    //  testDb.createCollection("users", { validator: userSchema,  });
+    //  const usersDb=testDb.collection("users")
+    //  usersDb.createIndex(  {email: 1} , { unique: true } )
+    //  }
 
-     
     console.log(`main => connectMongoDb CONNECTED `);
   } catch (error) {}
 };
@@ -67,14 +67,18 @@ app.post("/signup", async (req: any, res: any) => {
   const newUser = req.body;
   try {
     const result = await signUp({ client: client, user: newUser });
-    res.send(result).status(204);
+    if (result["acknowledged"]) {
+      res.status(200).send(result);
+    } else {
+      res.status(500).send(result);
+    }
   } catch (error) {
-    console.log(`AddUsser Error: ${error}`);
+    res.status(401).send(error);
   }
 });
 app.post("/login", async (req: any, res: any) => {
   const user = req.body;
-  console.log(`login body: ${req.body}`);
+
   try {
     const result = await logIn({ client: client, user: user });
     res.send(result).status(204);
