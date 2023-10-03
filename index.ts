@@ -3,7 +3,7 @@ import { userSchema } from "./roles/schemas/user/user_schema";
 import { signUp } from "./signUp";
 
 const express = require("express");
-const cors = require("cors"); 
+const cors = require("cors");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 require("dotenv/config");
 const app = express();
@@ -15,25 +15,6 @@ const clusterUrl = process.env.CLUSTER_URL ?? "";
 const username = encodeURIComponent("super-admin");
 const password = encodeURIComponent("Coco12345|");
 const uri = `mongodb+srv://${username}:${password}@${clusterUrl}/?retryWrites=true&w=majority`;
-
-// Create roles
-const roles = [
-  {
-    role: "admin",
-    db: "appTest",
-    privileges: ["all"],
-  },
-  {
-    role: "user",
-    db: "appTest",
-    privileges: [
-      {
-        resource: { db: "appTest", collection: "users" },
-        actions: ["find", "update", "insert", "remove"],
-      },
-    ],
-  },
-];
 
 // Create a MongoClient
 const client = new MongoClient(uri, {
@@ -49,7 +30,9 @@ const connectMongoDb = async () => {
     await client.connect();
 
     // Create test db
-    const testDb = client.db("appTest");
+    // const testDb = client.db("appTest");
+    // const usersCollection = testDb.collection("users");
+    // usersCollection.drop()
     // Create collection users
     // if (testDb.collection("users")===undefined) {
     //   console.log('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
@@ -79,11 +62,12 @@ app.post("/signup", async (req: any, res: any) => {
 app.post("/login", async (req: any, res: any) => {
   const user = req.body;
 
-  try {
-    const result = await logIn({ client: client, user: user });
-    res.send(result).status(204);
-  } catch (error) {
-    console.log(`AddUsser Error: ${error}`);
+  const result = await logIn({ client: client, user: user });
+  if (result === "string") {
+    res.status(200).send(result);
+  } else {
+    console.log(`ERROR SIGNUP: ${result}`);
+    res.status(403).send(result.toString());
   }
 });
 

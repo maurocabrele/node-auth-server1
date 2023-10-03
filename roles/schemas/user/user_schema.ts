@@ -15,7 +15,6 @@ export const userSchema = {
       },
       email: {
         type: "string",
-        
       },
       password: {
         type: "string",

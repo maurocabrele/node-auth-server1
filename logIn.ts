@@ -5,7 +5,7 @@ export const logIn = async ({
 }: {
   client: any;
   user: any;
-}): Promise<String> => {
+}): Promise<String | Object> => {
   let token = "";
 
   try {
@@ -13,19 +13,26 @@ export const logIn = async ({
     const usersCollection = usersDb.collection("users");
     const _user = await usersCollection.findOne(user);
 
-    if (_user._id) {
+    if (_user.email === user.email && _user.password === user.password) {
       const data = {
         time: Date(),
         user: _user,
       };
-      token = jwt.sign({ data }, process.env.JWT_KEY, {
-        expiresIn: process.env.JWT_EXPIRACY,
+      token = jwt.sign({ data }, process.env.JWT_KEY, { expiresIn: "1h" });
+
+      const refreshtoken = jwt.sign({ data }, process.env.JWT_KEY, {
+        expiresIn: "24h",
       });
-      console.log(`SUCCESS LOGIN: ${token}`);
+      await usersCollection.updateOne(
+        { email: _user.email },
+        {
+          $set: { jwt: token, refreshjwt: refreshtoken },
+        }
+      );
     }
     return token;
   } catch (error) {
     console.log(`ERROR SIGNUP: ${error}`);
-    return (token = JSON.stringify(error));
+    return Object(error);
   }
 };
