@@ -1,38 +1,47 @@
+import { Collection, WithId } from "mongodb";
+import { User } from "./models/userModel";
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+
 export const logIn = async ({
-  client,
+  usersDb,
   user,
 }: {
-  client: any;
-  user: any;
-}): Promise<String | Object> => {
-  let token = "";
+  usersDb: Collection<User>;
+  user: WithId<User>;
+}): Promise<String | Map<string, string>> => {
+  let response;
 
   try {
-    const usersDb = client.db("appTest");
-    const usersCollection = usersDb.collection("users");
-    const _user = await usersCollection.findOne(user);
+    const _user: User | null = await usersDb.findOne({ email: user.email });
 
-    if (_user.email === user.email && _user.password === user.password) {
-      const data = {
-        time: Date(),
-        user: _user,
-      };
-      token = jwt.sign({ data }, process.env.JWT_KEY, { expiresIn: "1h" });
-
-      const refreshtoken = jwt.sign({ data }, process.env.JWT_KEY, {
-        expiresIn: "24h",
-      });
-      await usersCollection.updateOne(
-        { email: _user.email },
-        {
-          $set: { jwt: token, refreshjwt: refreshtoken },
-        }
-      );
+    if (_user) {
+      const result = await bcrypt.compare(user.password, _user?.password);
+      if (result) {
+        const data = {
+          time: Date(),
+          user: _user.email,
+        };
+        response = jwt.sign({ data }, process.env.JWT_KEY, {
+          expiresIn: process.env.JWT_EXPIRACY,
+        });
+        const refreshtoken = jwt.sign(data, process.env.JWT_KEY, {
+          expiresIn: process.env.REFRESH_JWT_EXPIRACY,
+        });
+        await usersDb.updateOne(
+          {
+            email: _user.email,
+          },
+          {
+            $set: { jwt: response, refreshjwt: refreshtoken },
+          }
+        );
+      } else {
+        response = { error: "Email or password wrong" };
+      }
     }
-    return token;
-  } catch (error) {
-    console.log(`ERROR SIGNUP: ${error}`);
-    return Object(error);
+    return response;
+  } catch (error: any) {
+    throw Error(error);
   }
 };
